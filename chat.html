@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI理財助理</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Noto Sans TC', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+      padding: 0;
+      margin: 0;
+      min-height: 100vh;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    }
+    .container {
+      max-width: 540px;
+      margin: 40px auto 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px 0 rgba(60,72,88,0.10);
+      padding: 32px 24px 24px 24px;
+      min-height: 80vh;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode .container {
+      background: #1e293b;
+      box-shadow: 0 4px 24px 0 rgba(0,0,0,0.3);
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 2px 8px 0 #e0e7ff;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode .theme-toggle {
+      background: #f59e0b;
+    }
+    h1 {
+      text-align: center;
+      color: #3b3b4f;
+      margin-bottom: 24px;
+      letter-spacing: 2px;
+      transition: color 0.3s ease;
+    }
+    body.dark-mode h1 {
+      color: #f1f5f9;
+    }
+    #chat {
+      white-space: pre-wrap;
+      border: 1px solid #e5e7eb;
+      background: #f4f7fb;
+      padding: 16px;
+      max-height: 320px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      font-size: 1.05em;
+      box-shadow: 0 1px 2px 0 #e0e7ff;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode #chat {
+      border: 1px solid #334155;
+      background: #334155;
+      color: #f1f5f9;
+    }
+    .message.user {
+      color: #2563eb;
+      margin-bottom: 8px;
+      text-align: right;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+    body.dark-mode .message.user {
+      color: #60a5fa;
+    }
+    .message.ai {
+      color: #374151;
+      margin-bottom: 8px;
+      text-align: left;
+      background: #e0e7ff;
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 12px 12px 12px 0;
+      max-width: 90%;
+      box-shadow: 0 1px 2px 0 #e0e7ff;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode .message.ai {
+      background: #475569;
+      color: #f1f5f9;
+    }
+    .week-indicator {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      margin-left: 8px;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode .week-indicator {
+      background: #451a03;
+      color: #fbbf24;
+    }
+    .charts-container {
+      display: flex;
+      gap: 16px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .chart {
+      flex: 1;
+      min-width: 200px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode .chart {
+      background: #334155;
+      border: 1px solid #475569;
+    }
+    .chart h3 {
+      margin: 0 0 12px 0;
+      color: #374151;
+      font-size: 1em;
+      transition: color 0.3s ease;
+    }
+    body.dark-mode .chart h3 {
+      color: #f1f5f9;
+    }
+    .bar-chart {
+      height: 120px;
+      display: flex;
+      align-items: end;
+      gap: 4px;
+      padding: 8px 0;
+    }
+    .bar {
+      flex: 1;
+      background: linear-gradient(to top, #6366f1, #8b5cf6);
+      border-radius: 2px 2px 0 0;
+      min-height: 4px;
+      transition: all 0.3s ease;
+    }
+    .pie-chart {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      margin: 0 auto;
+      background: conic-gradient(
+        #6366f1 0deg 90deg,
+        #8b5cf6 90deg 180deg,
+        #ec4899 180deg 270deg,
+        #f59e0b 270deg 360deg
+      );
+      position: relative;
+    }
+    .pie-chart::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: #f8fafc;
+      border-radius: 50%;
+      transition: background 0.3s ease;
+    }
+    body.dark-mode .pie-chart::before {
+      background: #334155;
+    }
+
+    #prompt {
+      width: 70%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 1em;
+      margin-right: 8px;
+      background: #f8fafc;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode #prompt {
+      background: #475569;
+      border: 1px solid #64748b;
+      color: #f1f5f9;
+    }
+    #prompt:focus {
+      border: 1.5px solid #6366f1;
+      outline: none;
+      background: #fff;
+    }
+    body.dark-mode #prompt:focus {
+      background: #334155;
+    }
+    #sendBtn {
+      padding: 10px 22px;
+      border-radius: 6px;
+      border: none;
+      background: linear-gradient(90deg, #6366f1 0%, #2563eb 100%);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+      box-shadow: 0 2px 8px 0 #e0e7ff;
+    }
+    #sendBtn:disabled {
+      background: #a5b4fc;
+      cursor: not-allowed;
+    }
+    hr {
+      margin: 32px 0 18px 0;
+      border: none;
+      border-top: 1.5px solid #e5e7eb;
+      transition: border-color 0.3s ease;
+    }
+    body.dark-mode hr {
+      border-top-color: #475569;
+    }
+    h2 {
+      color: #6366f1;
+      margin-bottom: 12px;
+      font-size: 1.18em;
+      letter-spacing: 1px;
+      transition: color 0.3s ease;
+    }
+    body.dark-mode h2 {
+      color: #a78bfa;
+    }
+    .exp-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .exp-form input[type="date"],
+    .exp-form input[type="text"],
+    .exp-form input[type="number"] {
+      padding: 7px 8px;
+      border-radius: 5px;
+      border: 1px solid #cbd5e1;
+      font-size: 1em;
+      background: #f8fafc;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode .exp-form input[type="date"],
+    body.dark-mode .exp-form input[type="text"],
+    body.dark-mode .exp-form input[type="number"] {
+      background: #475569;
+      border: 1px solid #64748b;
+      color: #f1f5f9;
+    }
+    .exp-form input:focus {
+      border: 1.5px solid #6366f1;
+      outline: none;
+      background: #fff;
+    }
+    body.dark-mode .exp-form input:focus {
+      background: #334155;
+    }
+    #addExpBtn {
+      padding: 7px 18px;
+      border-radius: 5px;
+      border: none;
+      background: linear-gradient(90deg, #22d3ee 0%, #6366f1 100%);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+      box-shadow: 0 1px 4px 0 #e0e7ff;
+    }
+    #addExpBtn:active {
+      background: #2563eb;
+    }
+    #expList {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px 10px;
+      min-height: 40px;
+      margin-bottom: 10px;
+      font-size: 1em;
+      box-shadow: 0 1px 2px 0 #e0e7ff;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode #expList {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #f1f5f9;
+    }
+    #expList li {
+      margin-bottom: 6px;
+      color: #374151;
+      letter-spacing: 0.5px;
+      transition: color 0.3s ease;
+    }
+    body.dark-mode #expList li {
+      color: #f1f5f9;
+    }
+    .exp-btns button {
+      margin-right: 8px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: none;
+      font-size: 0.98em;
+      cursor: pointer;
+            transition: background 0.2s;
+    }
+    #exportAdviceBtn {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 1px 4px 0 #e0e7ff;
+    }
+    #importAdviceBtn {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 1px 4px 0 #e0e7ff;
+    }
+    #exportAdviceBtn:hover, #importAdviceBtn:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+    @media (max-width: 600px) {
+      .container { padding: 10px 2vw; }
+      #prompt { width: 100%; margin-bottom: 8px; }
+      #sendBtn { width: 100%; }
+      .exp-form { flex-direction: column; gap: 6px; }
+      .charts-container { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+  <div class="container">
+    <h1>AI理財助理</h1>
+    <div id="chat"></div>
+    <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+      <input id="prompt" type="text" placeholder="輸入訊息..." />
+      <button id="sendBtn">送出</button>
+    </div>
+    <div class="charts-container" id="chartsContainer" style="display:none;">
+      <div class="chart">
+        <h3>支出類型分布</h3>
+        <div class="pie-chart"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.95em;">
+          <span style="color:#6366f1;">食</span>
+          <span style="color:#8b5cf6;">衣</span>
+          <span style="color:#10b981;">住</span>
+          <span style="color:#f59e0b;">行</span>
+          <span style="color:#ec4899;">娛樂</span>
+          <span style="color:#64748b;">其他</span>
+        </div>
+      </div>
+      <div class="chart" style="min-width:180px;">
+        <h3>收支計算器</h3>
+        <div style="margin-bottom:8px;">
+          <label>本月收入：<input type="number" id="incomeInput" style="width:90px; padding:4px 6px; border-radius:4px; border:1px solid #cbd5e1;" min="0" /></label>
+        </div>
+        <div style="margin-bottom:6px;">總支出：<span id="totalExpense" style="color:#ef4444; font-weight:600;">$0</span></div>
+        <div>結餘：<span id="balance" style="color:#10b981; font-weight:600;">$0</span></div>
+      </div>
+    </div>
+    <hr>
+    <h2>記帳歷史紀錄</h2>
+    <form class="exp-form" onsubmit="return false;">
+      <input type="date" id="expDate" />
+      <select id="expCategory">
+        <option value="食">食</option>
+        <option value="衣">衣</option>
+        <option value="住">住</option>
+        <option value="行">行</option>
+        <option value="娛樂">娛樂</option>
+        <option value="其他">其他</option>
+      </select>
+      <input type="number" id="expAmount" placeholder="金額" style="width:80px;" />
+      <input type="text" id="expNote" placeholder="備註" />
+      <button id="addExpBtn">新增</button>
+    </form>
+        <ul id="expList"></ul>
+    <div class="exp-btns">
+      <button id="exportAdviceBtn">匯出建議</button>
+      <input type="file" id="importAdviceFile" accept=".json" style="display:none;" />
+      <button id="importAdviceBtn">匯入建議</button>
+    </div>
+    </div>
+  <script>
+    const ws = new WebSocket(`wss://hshgpt.webduino.tw`);
+    const chatDiv = document.getElementById('chat');
+    const promptInput = document.getElementById('prompt');
+    const sendBtn = document.getElementById('sendBtn');
+    const chartsContainer = document.getElementById('chartsContainer');
+
+    // 建議管理
+    let adviceHistory = [];
+    let currentAdvice = '';
+    let currentWeek = 1;
+
+    // 主題切換
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const themeBtn = document.querySelector('.theme-toggle');
+      if (document.body.classList.contains('dark-mode')) {
+        themeBtn.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+      } else {
+        themeBtn.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+      }
+    }
+
+    // 載入主題設定
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+      document.querySelector('.theme-toggle').textContent = '☀️';
+    }
+
+    // 計算週次
+    function calculateWeek(dateStr) {
+      const date = new Date(dateStr);
+      const startOfYear = new Date(date.getFullYear(), 0, 1);
+      const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+      return Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    }
+
+    // 更新圖表
+    function updateCharts() {
+      if (expenses.length === 0) {
+        chartsContainer.style.display = 'none';
+        return;
+      }
+
+      chartsContainer.style.display = 'flex';
+
+      // 六大類型固定顏色順序
+      const categoryList = ['食', '衣', '住', '行', '娛樂', '其他'];
+      const colorList = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#64748b'];
+      const categoryTotals = { 食:0, 衣:0, 住:0, 行:0, 娛樂:0, 其他:0 };
+      expenses.forEach(exp => {
+        if (categoryTotals.hasOwnProperty(exp.category)) {
+          categoryTotals[exp.category] += exp.amount;
+        }
+      });
+
+      // 更新圓餅圖
+      const pieChart = document.querySelector('.pie-chart');
+      const total = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+      let conicGradient = '';
+      let currentAngle = 0;
+      categoryList.forEach((category, index) => {
+        const value = categoryTotals[category];
+        const percentage = total ? (value / total) * 360 : 0;
+        conicGradient += `${colorList[index]} ${currentAngle}deg ${currentAngle + percentage}deg`;
+        if (index < categoryList.length - 1) conicGradient += ', ';
+        currentAngle += percentage;
+      });
+      pieChart.style.background = `conic-gradient(${conicGradient})`;
+    }
+
+    ws.onopen = () => console.log('WebSocket 已連線');
+    ws.onerror = err => console.error('WebSocket 錯誤', err);
+    ws.onclose = () => console.log('WebSocket 已斷線');
+
+    ws.onmessage = event => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'start') {
+        // 顯示 AI 回應容器並禁用輸入
+        chatDiv.innerHTML += '<div class="message ai"></div>';
+        promptInput.disabled = true;
+        sendBtn.disabled = true;
+      } else if (data.type === 'chunk') {
+        // 更新最後一則 AI 回應，前面加上 AI理財助理：前綴（僅第一次 chunk 時加）
+        const msgs = chatDiv.querySelectorAll('.message.ai');
+        if (msgs.length > 0) {
+          if (msgs[msgs.length - 1].textContent === '') {
+            msgs[msgs.length - 1].textContent = 'AI理財助理：';
+          }
+          // 過濾掉系統訊息
+          const filteredDelta = data.delta
+            .replace(/正在傳送 prompt 到 Azure OpenAI \(.*?\)\.\.\./g, '')
+            .replace(/Azure OpenAI 回應:/g, '')
+            .replace(/--- 回應結束 ---/g, '');
+          if (filteredDelta.trim() !== '') {
+            msgs[msgs.length - 1].textContent += filteredDelta;
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+          }
+        }
+      } else if (data.type === 'end') {
+        // 回應結束，恢復輸入並儲存建議
+        promptInput.disabled = false;
+        sendBtn.disabled = false;
+        promptInput.focus();
+        
+        // 儲存新的建議
+        const lastMsg = chatDiv.querySelectorAll('.message.ai');
+        if (lastMsg.length > 0) {
+          const newAdvice = lastMsg[lastMsg.length - 1].textContent.replace('AI理財助理：', '').trim();
+          if (newAdvice && newAdvice !== currentAdvice) {
+            // 結合舊建議並更新
+            const adviceEntry = {
+              timestamp: new Date().toISOString(),
+              advice: newAdvice,
+              expenses: [...expenses] // 複製當時的記帳資料
+            };
+            
+            // 移除舊的相同建議（如果存在）
+            adviceHistory = adviceHistory.filter(item => item.advice !== currentAdvice);
+            
+            // 加入新建議
+            adviceHistory.push(adviceEntry);
+            currentAdvice = newAdvice;
+            
+            // 儲存到 localStorage
+            localStorage.setItem('adviceHistory', JSON.stringify(adviceHistory));
+
+
+          }
+        }
+      } else if (data.type === 'error') {
+        alert('錯誤: ' + data.message);
+      }
+    };
+
+
+
+    sendBtn.onclick = () => {
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+      // 顯示使用者訊息
+      chatDiv.innerHTML += `<div class="message user">${prompt}</div>`;
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+      
+      // 準備歷史建議分析
+      let historyAnalysis = '';
+      if (adviceHistory.length > 0) {
+        historyAnalysis = `\n\n=== 歷史建議分析 ===\n`;
+        adviceHistory.forEach((advice, index) => {
+          const adviceDate = new Date(advice.timestamp).toLocaleDateString('zh-TW');
+          const expenseCount = advice.expenses ? advice.expenses.length : 0;
+          const totalExpenseAtTime = advice.expenses ? advice.expenses.reduce((sum, e) => sum + e.amount, 0) : 0;
+          historyAnalysis += `\n建議 ${index + 1} (${adviceDate}):\n`;
+          historyAnalysis += `當時記帳筆數: ${expenseCount} 筆\n`;
+          historyAnalysis += `當時總支出: $${totalExpenseAtTime}\n`;
+          historyAnalysis += `建議內容: ${advice.advice}\n`;
+          historyAnalysis += `---\n`;
+        });
+        
+        // 分析進步情況
+        const currentTotalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
+        const currentExpenseRatio = income > 0 ? (currentTotalExpense / income * 100).toFixed(1) : 0;
+        
+        if (adviceHistory.length > 1) {
+          const previousAdvice = adviceHistory[adviceHistory.length - 2];
+          const previousTotalExpense = previousAdvice.expenses ? previousAdvice.expenses.reduce((sum, e) => sum + e.amount, 0) : 0;
+          const previousExpenseRatio = income > 0 ? (previousTotalExpense / income * 100).toFixed(1) : 0;
+          
+          historyAnalysis += `\n=== 進步分析 ===\n`;
+          historyAnalysis += `上次總支出: $${previousTotalExpense} (支出比例: ${previousExpenseRatio}%)\n`;
+          historyAnalysis += `本次總支出: $${currentTotalExpense} (支出比例: ${currentExpenseRatio}%)\n`;
+          
+          if (currentTotalExpense < previousTotalExpense) {
+            historyAnalysis += `✅ 進步: 支出減少 $${previousTotalExpense - currentTotalExpense}\n`;
+          } else if (currentTotalExpense > previousTotalExpense) {
+            historyAnalysis += `⚠️ 需注意: 支出增加 $${currentTotalExpense - previousTotalExpense}\n`;
+          } else {
+            historyAnalysis += `➡️ 持平: 支出維持相同\n`;
+          }
+          
+          if (currentExpenseRatio < previousExpenseRatio) {
+            historyAnalysis += `✅ 進步: 支出比例下降 ${previousExpenseRatio - currentExpenseRatio}%\n`;
+          } else if (currentExpenseRatio > previousExpenseRatio) {
+            historyAnalysis += `⚠️ 需注意: 支出比例上升 ${currentExpenseRatio - previousExpenseRatio}%\n`;
+          }
+        }
+      }
+      
+      // 將記帳本內容與 user prompt 一併送出，並加上分析指令
+      const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
+      const balance = income - totalExpense;
+      const expenseRatio = income > 0 ? (totalExpense / income * 100).toFixed(1) : 0;
+      const fullPrompt = `以下是我的記帳本內容：\n${JSON.stringify(expenses, null, 2)}\n\n收支狀況：\n- 本月收入：$${income}\n- 總支出：$${totalExpense}\n- 結餘：$${balance}\n- 支出比例：${expenseRatio}%${historyAnalysis}\n\n請先分析這些支出紀錄是否有不合理的規劃，特別注意支出比例是否過高、結餘是否足夠，若有請指出並詢問我是否要解釋這些支出，然後根據我的收支狀況提出具體理財建議。\n\n請特別關注我是否比之前的建議有所進步，如果有進步請給予肯定，如果沒有進步或退步請指出問題並提出更具體的改善建議。\n\n我的提問：${prompt}`;
+      ws.send(JSON.stringify({ 
+        prompt: fullPrompt, 
+        system: `你是一個毒舌但真心為使用者著想的 AI 理財助理，專門協助檢視個人支出紀錄與理財習慣。\n你的風格犀利直接，對於無謂支出（如過度娛樂、頻繁購物、重複消費等）會提出嚴厲但實用的批評與提醒。\n如果使用者連續兩週以上有這類支出，你會以責備的語氣指出問題，並提出具體改善建議。\n若支出合理或改善中，你可以稍微誇獎並鼓勵持續努力。\n請特別關注使用者的進步情況，如果有進步要給予肯定，如果沒有進步要指出問題。\n請以中文回應，語氣可犀利但不惡毒，內容務實且具建設性。`
+      }));
+      promptInput.value = '';
+    };
+
+    promptInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+
+    // 記帳歷史紀錄功能
+    const expList = document.getElementById('expList');
+    const expDate = document.getElementById('expDate');
+    const expCategory = document.getElementById('expCategory');
+    const expAmount = document.getElementById('expAmount');
+    const expNote = document.getElementById('expNote');
+    const addExpBtn = document.getElementById('addExpBtn');
+    const expenses = [];
+
+    function renderExpenses() {
+      expList.innerHTML = '';
+      expenses.forEach((e, index) => {
+        const item = document.createElement('li');
+        const week = calculateWeek(e.date);
+        item.innerHTML = `${e.date}｜${e.category}｜$${e.amount}｜${e.note} <span class="week-indicator">第${week}週</span> <button onclick="deleteExpense(${index})" style="margin-left:8px; padding:2px 6px; background:#ef4444; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:0.8em;">刪除</button>`;
+        expList.appendChild(item);
+      });
+      updateCharts();
+    }
+
+    // 刪除記帳功能
+    function deleteExpense(index) {
+      if (confirm('確定要刪除這筆記帳嗎？')) {
+        expenses.splice(index, 1);
+        renderExpenses();
+        // localStorage.setItem('expenses', JSON.stringify(expenses)); // 已移除
+      }
+    }
+
+    addExpBtn.onclick = () => {
+      const date = expDate.value;
+      const category = expCategory.value.trim();
+      const amount = parseFloat(expAmount.value);
+      const note = expNote.value.trim();
+      if (!date || !category || isNaN(amount)) {
+        alert('請完整填寫日期、類別與金額');
+        return;
+      }
+      expenses.push({ date, category, amount, note });
+      renderExpenses();
+      expDate.value = '';
+      expCategory.value = '';
+      expAmount.value = '';
+      expNote.value = '';
+      // 只有累積七個不同日期才自動分析
+      const uniqueDates = Array.from(new Set(expenses.map(e => e.date)));
+      if (uniqueDates.length === 7) {
+        // 在聊天室顯示自動分析提示
+        chatDiv.innerHTML += `<div class="message user">（系統自動分析：已累積七個不同日期的記帳）</div>`;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+        const autoPrompt = '請根據目前所有記帳紀錄，分析是否有不合理的支出或理財問題，並主動提出具體建議。';
+        // 準備歷史建議分析
+        let historyAnalysis = '';
+        if (adviceHistory.length > 0) {
+          historyAnalysis = `\n\n=== 歷史建議分析 ===\n`;
+          adviceHistory.forEach((advice, index) => {
+            const adviceDate = new Date(advice.timestamp).toLocaleDateString('zh-TW');
+            const expenseCount = advice.expenses ? advice.expenses.length : 0;
+            const totalExpenseAtTime = advice.expenses ? advice.expenses.reduce((sum, e) => sum + e.amount, 0) : 0;
+            historyAnalysis += `\n建議 ${index + 1} (${adviceDate}):\n`;
+            historyAnalysis += `當時記帳筆數: ${expenseCount} 筆\n`;
+            historyAnalysis += `當時總支出: $${totalExpenseAtTime}\n`;
+            historyAnalysis += `建議內容: ${advice.advice}\n`;
+            historyAnalysis += `---\n`;
+          });
+          // 分析進步情況
+          const currentTotalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
+          const currentExpenseRatio = income > 0 ? (currentTotalExpense / income * 100).toFixed(1) : 0;
+          if (adviceHistory.length > 1) {
+            const previousAdvice = adviceHistory[adviceHistory.length - 2];
+            const previousTotalExpense = previousAdvice.expenses ? previousAdvice.expenses.reduce((sum, e) => sum + e.amount, 0) : 0;
+            const previousExpenseRatio = income > 0 ? (previousTotalExpense / income * 100).toFixed(1) : 0;
+            historyAnalysis += `\n=== 進步分析 ===\n`;
+            historyAnalysis += `上次總支出: $${previousTotalExpense} (支出比例: ${previousExpenseRatio}%)\n`;
+            historyAnalysis += `本次總支出: $${currentTotalExpense} (支出比例: ${currentExpenseRatio}%)\n`;
+            if (currentTotalExpense < previousTotalExpense) {
+              historyAnalysis += `✅ 進步: 支出減少 $${previousTotalExpense - currentTotalExpense}\n`;
+            } else if (currentTotalExpense > previousTotalExpense) {
+              historyAnalysis += `⚠️ 需注意: 支出增加 $${currentTotalExpense - previousTotalExpense}\n`;
+            } else {
+              historyAnalysis += `➡️ 持平: 支出維持相同\n`;
+            }
+            if (currentExpenseRatio < previousExpenseRatio) {
+              historyAnalysis += `✅ 進步: 支出比例下降 ${previousExpenseRatio - currentExpenseRatio}%\n`;
+            } else if (currentExpenseRatio > previousExpenseRatio) {
+              historyAnalysis += `⚠️ 需注意: 支出比例上升 ${currentExpenseRatio - previousExpenseRatio}%\n`;
+            }
+          }
+        }
+        const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
+        const balance = income - totalExpense;
+        const expenseRatio = income > 0 ? (totalExpense / income * 100).toFixed(1) : 0;
+        const fullPrompt = `以下是我的記帳本內容：\n${JSON.stringify(expenses, null, 2)}\n\n收支狀況：\n- 本月收入：$${income}\n- 總支出：$${totalExpense}\n- 結餘：$${balance}\n- 支出比例：${expenseRatio}%${historyAnalysis}\n\n請先分析這些支出紀錄是否有不合理的規劃，特別注意支出比例是否過高、結餘是否足夠，若有請指出並詢問我是否要解釋這些支出，然後根據我的收支狀況提出具體理財建議。\n\n請特別關注我是否比之前的建議有所進步，如果有進步請給予肯定，如果沒有進步或退步請指出問題並提出更具體的改善建議。\n\n我的提問：${autoPrompt}`;
+        ws.send(JSON.stringify({
+          prompt: fullPrompt,
+          system: `你是一個毒舌但真心為使用者著想的 AI 理財助理，專門協助檢視個人支出紀錄與理財習慣。\n你的風格犀利直接，對於無謂支出（如過度娛樂、頻繁購物、重複消費等）會提出嚴厲但實用的批評與提醒。\n如果使用者連續兩週以上有這類支出，你會以責備的語氣指出問題，並提出具體改善建議。\n若支出合理或改善中，你可以稍微誇獎並鼓勵持續努力。\n請特別關注使用者的進步情況，如果有進步要給予肯定，如果沒有進步要指出問題。\n請以中文回應，語氣可犀利但不惡毒，內容務實且具建設性。`
+        }));
+      }
+    };
+
+    document.getElementById('exportAdviceBtn').onclick = () => {
+      if (adviceHistory.length === 0) {
+        alert('沒有建議資料可以匯出');
+        return;
+      }
+      const adviceData = {
+        exportDate: new Date().toISOString(),
+        adviceHistory: adviceHistory,
+        currentExpenses: expenses
+      };
+      const blob = new Blob([JSON.stringify(adviceData, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `理財建議_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+    };
+
+    document.getElementById('importAdviceBtn').onclick = () => {
+      document.getElementById('importAdviceFile').click();
+    };
+
+    document.getElementById('importAdviceFile').onchange = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const adviceData = JSON.parse(e.target.result);
+          if (adviceData.adviceHistory && Array.isArray(adviceData.adviceHistory)) {
+            adviceHistory = [...adviceHistory, ...adviceData.adviceHistory];
+            const uniqueAdvice = [];
+            const seenAdvice = new Set();
+            adviceHistory.forEach(item => {
+              if (!seenAdvice.has(item.advice)) {
+                seenAdvice.add(item.advice);
+                uniqueAdvice.push(item);
+              }
+            });
+            adviceHistory = uniqueAdvice;
+            localStorage.setItem('adviceHistory', JSON.stringify(adviceHistory));
+            if (adviceHistory.length > 0) {
+              const latestAdvice = adviceHistory[adviceHistory.length - 1];
+              chatDiv.innerHTML += `<div class="message ai">AI理財助理：${latestAdvice.advice}</div>`;
+              currentAdvice = latestAdvice.advice;
+            }
+            alert(`成功匯入 ${adviceData.adviceHistory.length} 筆建議資料`);
+          } else {
+            alert('JSON 檔案格式不正確');
+          }
+        } catch (error) {
+          alert('讀取 JSON 檔案失敗: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    // 頁面載入時嘗試讀取本地儲存的記帳資料和建議
+    window.onload = () => {
+      // 讀取建議歷史
+      const savedAdvice = localStorage.getItem('adviceHistory');
+      if (savedAdvice) {
+        try {
+          adviceHistory = JSON.parse(savedAdvice);
+          if (adviceHistory.length > 0) {
+            // 顯示最新的建議
+            const latestAdvice = adviceHistory[adviceHistory.length - 1];
+            chatDiv.innerHTML += `<div class="message ai">AI理財助理：${latestAdvice.advice}</div>`;
+            currentAdvice = latestAdvice.advice;
+          }
+        } catch (e) {
+          console.error('讀取建議歷史失敗:', e);
+        }
+      }
+      // 一周未記帳提醒
+      if (expenses.length > 0) {
+        const lastDate = expenses.map(e => e.date).sort().reverse()[0];
+        const last = new Date(lastDate);
+        const now = new Date();
+        const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 7) {
+          setTimeout(() => {
+            alert('您已經超過一週沒有記帳囉，記得保持理財習慣！');
+          }, 500);
+        }
+      }
+    };
+
+    // 每次新增記帳時自動儲存到本地
+    // 已移除
+
+    // 頁面離開提醒功能
+    window.addEventListener('beforeunload', (event) => {
+      // 僅提醒建議匯出
+      const message = '注意：直接關閉網頁可能會遺失未匯出的建議資料。建議先匯出建議檔案再離開。';
+      event.preventDefault();
+      event.returnValue = message;
+      return message;
+    });
+
+    // 當用戶嘗試離開頁面時（如按 F5 重新整理、點擊連結等）
+    window.addEventListener('unload', () => {
+      // 僅儲存建議歷史
+      localStorage.setItem('adviceHistory', JSON.stringify(adviceHistory));
+    });
+
+    // 收支計算器功能
+    const incomeInput = document.getElementById('incomeInput');
+    const totalExpenseSpan = document.getElementById('totalExpense');
+    const balanceSpan = document.getElementById('balance');
+    // 儲存收入
+    let income = Number(localStorage.getItem('income') || 0);
+    incomeInput.value = income;
+
+    function updateCalculator() {
+      const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
+      totalExpenseSpan.textContent = `$${totalExpense}`;
+      balanceSpan.textContent = `$${income - totalExpense}`;
+    }
+
+    incomeInput.addEventListener('input', () => {
+      income = Number(incomeInput.value) || 0;
+      localStorage.setItem('income', income);
+      updateCalculator();
+    });
+
+    // 在 renderExpenses 及頁面載入時都要更新
+    const originalRenderExpenses = renderExpenses;
+    renderExpenses = function() {
+      originalRenderExpenses();
+      updateCalculator();
+    };
+    window.addEventListener('DOMContentLoaded', updateCalculator);
+  </script>
+</body>
+</html> 
